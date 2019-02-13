@@ -2,6 +2,8 @@
 HACKS := -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast
 
 OBJS := \
+	port/3ds.o \
+	\
 	source/block.o \
 	source/camera.o \
 	source/configuration.o \
@@ -29,11 +31,11 @@ OBJS := \
 
 all: game
 
-%.o : %.c
-	gcc -o $@ $^ -I./port/ -DPORT=1 -c $(HACKS)
+%.o : %.c ./port/3ds.h
+	gcc -g -O0 -o $@ $< -I./port/ -DPORT=1 -c $(HACKS)
 
 clean:
 	rm -f $(OBJS)
 
 game: $(OBJS)
-	gcc -o $@ $^ -lm
+	gcc -g -O0 -o $@ $^ -lm -lGL -lGLU -lGLEW -lglut -pthread

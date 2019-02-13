@@ -20,7 +20,8 @@
 #include "test_vsh_shbin.h"
 #include "terrain_bin.h"
 #else
-SHADER(terrain_bin)
+RAW_FILE(test_vsh_shbin, "data/test.vsh")
+RAW_FILE(terrain_bin, "data/terrain.bin")
 #endif
 
 #define TICKS_PER_SEC (268123480)
@@ -64,8 +65,12 @@ void doFrame1()
 	GPU_SetBlendingColor(0,0,0,0);
 	GPU_SetDepthTestAndWriteMask(true, GPU_GREATER, GPU_WRITE_ALL);
 	
+#ifndef PORT
 	GPUCMD_AddSingleParam(0x00010062, 0); 
 	GPUCMD_AddSingleParam(0x000F0118, 0);
+#else
+#warning Bad GPUCMD_AddSingleParam
+#endif
 	
 	//setup shader
 		SHDR_UseProgram(shader, 0);
@@ -190,7 +195,9 @@ int main(int argc, char** argv)
 	initChunkPool();
 	initWorld(&world);
 	initSubscreen();
+#ifndef PORT
 	initScreenshot();
+#endif
 	print("generating world...\n");
 
 	initPlayer(&player);
@@ -203,7 +210,9 @@ int main(int argc, char** argv)
 
 	while(aptMainLoop())
 	{
+#ifndef PORT
 		float slider=CONFIG_3D_SLIDERSTATE;
+#endif
 		u64 newTick=svcGetSystemTick();
 		float timeDelta=((float)(newTick-lastTick))/TICKS_PER_SEC;
 		lastTick=newTick;
@@ -223,6 +232,7 @@ int main(int argc, char** argv)
 		doFrame1();
 		GPUCMD_Finalize();
 
+#ifndef PORT
 		if(slider>0.0f)
 		{
 			//new and exciting 3D !
@@ -259,6 +269,9 @@ int main(int argc, char** argv)
 			gspWaitForPPF();
 			GPUCMD_SetBuffer(gpuCmd, gpuCmdSize, 0);
 		}else{
+#else
+    {
+#endif
 			//boring old 2D !
 			GPUCMD_FlushAndRun(gxCmdBuf);
 			gspWaitForP3D();
@@ -290,7 +303,9 @@ int main(int argc, char** argv)
 		// drawBottom(); //DEBUG
 	}
 
+#ifndef PORT
 	exitScreenshot();
+#endif
 	exitSubscreen();
 	flushWorld(&world);
 	exitDispatcher(NULL);

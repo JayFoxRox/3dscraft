@@ -3,7 +3,11 @@
 #include "text.h"
 #include "producer.h"
 
+#ifndef PORT
 void producerMain(u32 arg)
+#else
+int producerMain(void* arg)
+#endif
 {
 	producer_s* p=(producer_s*)arg;
 	while(!p->exit)
@@ -45,7 +49,11 @@ void initProducer(producer_s* p)
 	p->exit=false;
 	svcCreateMutex(&p->requestMutex, false);
 	svcCreateMutex(&p->responseMutex, false);
+#ifndef PORT
 	Result val = svcCreateThread(&p->thread, producerMain, (u32)p, (u32*)&p->stack[PRODUCER_STACKSIZE/8], 0x18, 1);
+#else
+	Result val = svcCreateThread(&p->thread, producerMain, (void*)p);
+#endif
 	print("%08X (%08X)\n",(unsigned int)val,(unsigned int)p->thread);
 	if(val)
 	{

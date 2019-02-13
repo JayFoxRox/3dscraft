@@ -26,6 +26,13 @@ l=[]
 for j in range(0,h,8):
 	for i in range(0,w,8):
 		parseTile(im, l, i, j)
+if sys.argv[3] == "port":
+	print("Port-mode!")
+	l = []
+	for j in range(h):
+		for i in range(w):
+			pixel=im.getpixel((i,j))
+			l.append(((pixel[1]&0xFF)<<8)|((pixel[2]&0xFF)<<16)|((pixel[3]&0xFF)<<24)|(pixel[0]&0xFF))
 
 dst=open(dstname,"wb")
 for k in l:

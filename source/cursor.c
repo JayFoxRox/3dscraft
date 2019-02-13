@@ -6,7 +6,7 @@
 #ifndef PORT
 #include "cursor_bin.h"
 #else
-SHADER(cursor_bin)
+RAW_FILE(cursor_bin, "data/cursor.bin")
 #endif
 
 #define CURSOR_SCALEFACT (1.1f)

@@ -9,7 +9,7 @@
 #ifndef PORT
 #include "cloud_bin.h"
 #else
-SHADER(cloud_bin)
+RAW_FILE(cloud_bin, "data/cloud.bin")
 #endif
 
 const faceVertex_s cloudVboData[]=

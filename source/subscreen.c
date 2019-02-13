@@ -7,7 +7,7 @@
 #ifndef PORT
 #include "blocks_bin.h"
 #else
-SHADER(blocks_bin)
+RAW_FILE(blocks_bin, "data/blocks.bin")
 #endif
 
 #define BLOCK_SIZE (16)
