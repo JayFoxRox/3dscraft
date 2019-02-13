@@ -6,7 +6,11 @@
 #include "gs.h"
 #include "sky.h"
 
+#ifndef PORT
 #include "cloud_bin.h"
+#else
+SHADER(cloud_bin)
+#endif
 
 const faceVertex_s cloudVboData[]=
 {

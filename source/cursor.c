@@ -3,7 +3,11 @@
 #include "cursor.h"
 #include "block.h"
 
+#ifndef PORT
 #include "cursor_bin.h"
+#else
+SHADER(cursor_bin)
+#endif
 
 #define CURSOR_SCALEFACT (1.1f)
 

@@ -16,8 +16,12 @@
 #include "subscreen.h"
 #include "bmp.h"
 
+#ifndef PORT
 #include "test_vsh_shbin.h"
 #include "terrain_bin.h"
+#else
+SHADER(terrain_bin)
+#endif
 
 #define TICKS_PER_SEC (268123480)
 #define TICKS_PER_VBL (TICKS_PER_SEC/60)
@@ -270,7 +274,9 @@ int main(int argc, char** argv)
 
 		gspWaitForEvent(GSPEVENT_VBlank0, true);
 
+#ifndef PORT
 		if(keysDown()&KEY_Y)saveScreenshot();
+#endif
 
 		// u64 val=svcGetSystemTick();
 		// debugValue[1]=(u32)(svcGetSystemTick()-val);

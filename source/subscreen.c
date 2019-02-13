@@ -4,7 +4,11 @@
 #include "player.h"
 #include "block.h"
 
+#ifndef PORT
 #include "blocks_bin.h"
+#else
+SHADER(blocks_bin)
+#endif
 
 #define BLOCK_SIZE (16)
 
