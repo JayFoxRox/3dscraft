@@ -38,4 +38,4 @@ clean:
 	rm -f $(OBJS)
 
 game: $(OBJS)
-	gcc -g -O0 -o $@ $^ -lm -lGL -lGLU -lGLEW -lglut -pthread
+	gcc -g -O0 -o $@ $^ -lm -lGL -lGLU -lGLEW -lglut -pthread -lSDL2

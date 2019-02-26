@@ -11,6 +11,10 @@
 
 #include <threads.h>
 
+#include <SDL2/SDL.h>
+
+extern SDL_GameController* controller;
+
 
 // Helper to work with 3DS handles:
 
@@ -19,8 +23,6 @@ typedef int Handle;
 void* create_handle(Handle* handle, size_t size);
 void* get_handle(Handle handle);
 void destroy_handle(Handle handle);
-
-
 
 
 
@@ -125,8 +127,8 @@ typedef enum {
 
 #define KEY_A BIT(0)
 #define KEY_B BIT(1)
-#define KEY_X BIT(2)
-#define KEY_Y BIT(3)
+//#define KEY_X BIT(2)
+//#define KEY_Y BIT(3)
 #define KEY_START BIT(4)
 #define KEY_SELECT BIT(5)
 #define KEY_DRIGHT BIT(6)
@@ -162,6 +164,13 @@ static void gfxInit() {
     /* Problem: glewInit failed, something is seriously wrong. */
     fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
   }
+
+  SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
+
+  controller = SDL_GameControllerOpen(0);
+  printf("'%s'\n", SDL_GameControllerName(controller));
+
+  //FIXME: SDL_CreateWindow(); ?
   
 }
 static void fsInit() {}
@@ -205,7 +214,7 @@ static void GX_SetMemoryFill(u32* a, ...) {
   //FIXME: GX_SetDisplayTransfer(gxCmdBuf, (u32*)gpuOut, 0x019001E0, u32* addr, 0x019001E0, 0x01001000);
   //FIXME: glClear?
   glClearColor(1.0f, 0.0f, 1.0f, 1.0f); //FIXME: Use correct color
-  glClearDepth(1.0f);
+  glClearDepth(0.0f);
 //  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 static void GX_SetDisplayTransfer(void* a, u32* b, u32 c, u32* d, u32 e, u32 f) {
@@ -236,7 +245,7 @@ static void GPU_SetStencilTest(bool a, int b, uint8_t c, uint8_t d, uint8_t e) {
 }
 static void GPU_SetViewport(u32* a, u32* b, int c, int d, int e, int f) {
   //FIXME: Respect a and b?
-  //printf("Viewport at %d,%d is %dx%d\n", c, d, e, f);
+  printf("Viewport at %d,%d is %dx%d\n", c, d, e, f);
   glViewport(d, c, f, e);
 }
 static void GPU_SetStencilOp(int a, int b, int c) { 
@@ -324,6 +333,7 @@ static Result FSUSER_OpenFile(void* a, Handle* b, FS_archive c, char* d, int e, 
   }
   FILE** file = create_handle(b, sizeof(FILE*));
   *file = tmp;
+  printf("Handle is %d\n", *b);
   return 0;
 }
 
@@ -359,7 +369,7 @@ static void gfxSwapBuffersGpu() {
   glBindTexture(GL_TEXTURE_2D, fb);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 320, 240, 0, GL_RGB, GL_UNSIGNED_BYTE, sub_buffer);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 320, 240, 0, GL_BGR, GL_UNSIGNED_BYTE, sub_buffer);
 
   glMatrixMode(GL_MODELVIEW);
   glPushMatrix();
@@ -397,7 +407,7 @@ static void gfxSwapBuffersGpu() {
 #endif
 
   glutSwapBuffers();
-glClear(GL_COLOR_BUFFER_BIT);
+glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 static u32* gpuCmdBuf = NULL;
@@ -498,8 +508,11 @@ static void GPU_SetUniform(u32 reg, u32* values, int count) {//FIXME: Implement
     }
     glLoadIdentity();
     glMultTransposeMatrixf(m);
-    //glLoadIdentity();
-    //gluPerspective(45.0f, 480.0f / 400.0f, -100.0f, 100.0f);
+
+#if 1    
+    glLoadIdentity();
+    gluPerspective(80.0f, 240.0f/400.0f, 0.01f, 1000.0f); //45.0f, 480.0f / 400.0f, -100.0f, 100.0f);
+#endif
 
     glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
   } else if (!strcmp(name, "modelview")) {
@@ -524,11 +537,14 @@ static void GPU_SetUniform(u32 reg, u32* values, int count) {//FIXME: Implement
 static void GPU_DrawArrayDirectly(GPU_Primitive_t primitive, u8* data, u32 n) {
   assert(primitive == GPU_TRIANGLES);
 
+  glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Draw");
+
 #if 1
   //FIXME: Disable this hack
   {
-    glDepthRange(-1.0f, 0.0f);
-    glDisable(GL_DEPTH_TEST);
+    glDepthRange(1.0f, 0.0f);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
     glDisable(GL_CULL_FACE);
   }
 #endif
@@ -540,11 +556,13 @@ static void GPU_DrawArrayDirectly(GPU_Primitive_t primitive, u8* data, u32 n) {
   } Vertex;
   const Vertex* vertices = (const Vertex*)data;
 
-  //glPointSize(10.0f);
+#if 0
+  glPointSize(10.0f);
   glBegin(GL_POINTS);
   glColor3f(1.0f, 0.0f, 1.0f);
   glVertex3f(0.0, 0.0, 0.0);
   glEnd();
+#endif
 
 #if 0
 GLdouble model[4*4];
@@ -566,74 +584,106 @@ if (ret == GLU_TRUE) {
   for(int i = 0; i < n; i++) {
     const Vertex* v = &vertices[i];
     glNormal3f(v->nx, v->ny, v->nz);
-    glTexCoord2f(v->u, v->v);
+    glTexCoord2f(v->u, 1.0f - v->v);
     glVertex3f(v->x, v->y, v->z);
   }
 
   glEnd();
+
+  glPopDebugGroup();
 }
 
 static void GSPGPU_FlushDataCache(void* a, u8* b, size_t c) {
   //FIXME: Can this be a nop?
 }
 
+extern int keys;
+extern int last_keys;
+
 static void hidScanInput() {
+
   //FIXME: Update xpad or something
+  SDL_GameControllerUpdate();
 
-  //FIXME: Update result for hidKeysDown?
-}
-static void hidCircleRead(circlePosition* a) {
-  static float t = 0.0f;
-  a->dx = 0; //sinf(t) * 30000.0f;
-  a->dy = 30000; //cosf(t) * 30000.0f;
-  t += 0.2f;
-}
-static void hidCstickRead(circlePosition* a) {
-  a->dx = 0;
-  a->dy = 0;
-}
-static int hidKeysHeld() {
-  //FIXME: Get keys
-  int keys = 0;
+  // Update result for hidKeysDown?
+  last_keys = keys;
+  keys = 0;
 
-  static bool p = false;
-  static int t = 0;
-  if (t++ > 100) {
-    p = !p;
-    printf("button is %d\n", p);
-    t = 0;
+  if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_UP)) {
+    keys |= KEY_DUP; // Fly
+  }
+  if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT)) {
+    keys |= KEY_DLEFT; // ?
+  }
+  if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN)) {
+    keys |= KEY_DDOWN; // ?
+  }
+  if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) {
+    keys |= KEY_DRIGHT; // Block selection
   }
 
-  if (p) {
-    keys |= KEY_DRIGHT; // Block selection
-    keys |= KEY_DUP; // Fly
+  if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_X)) {
+    keys |= KEY_ZL; // ?
+  }
+  if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_Y)) {
+    keys |= KEY_ZR; // ?
+  }
+
+  if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_START)) {
+    keys |= KEY_START; // ?
+  }
+  if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_BACK)) {
+    keys |= KEY_SELECT; // ?
+  }
+
+  if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_LEFTSHOULDER)) {
     keys |= KEY_L; // Jump
+  }
+  if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) {
     keys |= KEY_R; // Place block
+  }
+  if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_RIGHTSTICK)) {
     keys |= KEY_TOUCH; // Rotate view
-  } 
+  }
   
+}
+static void hidCircleRead(circlePosition* a) {
+  //SDL_GameControllerUpdate();
+  int16_t deadzone = 0x4000;
+  int16_t shift = 0x100;
+  a->dx = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX);
+  a->dy = 0xFFFF ^ SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY);
+  if (abs(a->dx) < deadzone) { a->dx = 0; }
+  if (abs(a->dy) < deadzone) { a->dy = 0; }
+  a->dx /= shift;
+  a->dy /= shift;
+}
+static void hidCstickRead(circlePosition* a) {
+  int16_t deadzone = 0x4000;
+  int16_t shift = 0x100;
+  a->dx = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTX);
+  a->dy = 0xFFFF ^ SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTY);
+  if (abs(a->dx) < deadzone) { a->dx = 0; }
+  if (abs(a->dy) < deadzone) { a->dy = 0; }
+  a->dx /= shift;
+  a->dy /= shift;
+}
+static int hidKeysHeld() {
   return keys;
 }
 static int hidKeysDown() {
-
-  static int last = 0;
-  int cur = hidKeysHeld();
-  int changed = cur ^ last;
-  last = cur;
-
-  int down = changed & ~cur;
+  int changed = keys ^ last_keys;
+  int down = changed & ~keys;
   return down;
 }
 static void hidTouchRead(touchPosition* a) {
   //FIXME: Get mouse coordinates
-  static float t = 0.0f;
   a->px = 0;
   a->py = 0;
 #if 0
   a->px = 30000 + sinf(((int)(t * 1000) % 1000) / 1000.0f) * 30000;
   a->py = 30000 + cosf(t) * 30000;
 #endif
-  t += 0.1f;
 }
 
 static int keysDown() {
@@ -686,6 +736,7 @@ static Result svcReleaseMutex(Handle mutex) {
 static void svcSleepThread(u64 a) {
   //FIXME: Handle remaining time for signals
   struct timespec ts = { .tv_nsec = a };
+  //printf("Sleep!\n");
   while(thrd_sleep(&ts, &ts) != 0);
 }
 static void svcWaitSynchronization(Handle a, u64 b) {
@@ -694,9 +745,7 @@ static void svcWaitSynchronization(Handle a, u64 b) {
   mtx_lock(m);
 }
 static u64 svcGetSystemTick() {
-  //FIXME: Use proper timer
-  static u64 t = 0;
-  t += 1000;
+  u64 t = SDL_GetTicks() * 268123480ULL / 1000ULL;
   return t;
 }
 

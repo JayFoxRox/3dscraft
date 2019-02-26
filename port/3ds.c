@@ -5,6 +5,11 @@
 
 #include "3ds.h"
 
+SDL_GameController* controller = NULL;
+
+int keys = 0;
+int last_keys = 0;
+
 uint8_t sub_buffer[320*240 * 3];
 
 static int handle_count = 0;
