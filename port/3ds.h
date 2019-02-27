@@ -155,7 +155,8 @@ static void gfxInit() {
   char* argv[1] = { "GLUT" };
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_STENCIL | GLUT_DOUBLE);
-  glutInitWindowSize(400, 2 * 240);
+  //glutInitWindowSize(400, 2 * 240);
+  glutInitWindowSize(640, 480);
   glutCreateWindow("GLUT");
   glutDisplayFunc(display_cb);
 
@@ -246,7 +247,7 @@ static void GPU_SetStencilTest(bool a, int b, uint8_t c, uint8_t d, uint8_t e) {
 static void GPU_SetViewport(u32* a, u32* b, int c, int d, int e, int f) {
   //FIXME: Respect a and b?
   printf("Viewport at %d,%d is %dx%d\n", c, d, e, f);
-  glViewport(d, c, f, e);
+  glViewport(0, 0, 640, 480);
 }
 static void GPU_SetStencilOp(int a, int b, int c) { 
   assert(a == GPU_KEEP);
@@ -382,8 +383,8 @@ static void gfxSwapBuffersGpu() {
   glLoadIdentity();
   gluOrtho2D(0.0f, 1.0f, 1.0f, 0.0f);
 
-  float w = 320.0f / 400.0f;
-  float h = 0.5f;
+  float w = 320.0f / 640.0f;
+  float h = 240.0f / 480.0f;
 
   float x = 1.0f - w;
   float y = 1.0f - h;
@@ -516,7 +517,8 @@ static void GPU_SetUniform(u32 reg, u32* values, int count) {//FIXME: Implement
 
 #if 1    
     glLoadIdentity();
-    gluPerspective(80.0f, 240.0f/400.0f, 0.01f, 1000.0f); //45.0f, 480.0f / 400.0f, -100.0f, 100.0f);
+//    gluPerspective(80.0f, 240.0f/400.0f, 0.01f, 1000.0f); //45.0f, 480.0f / 400.0f, -100.0f, 100.0f);
+    gluPerspective(80.0f, 480.0f/640.0f, 0.01f, 1000.0f);
 #endif
 
     glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
