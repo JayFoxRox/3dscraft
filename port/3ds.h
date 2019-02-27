@@ -213,7 +213,7 @@ static void gspWaitForPSC0() {}
 static void GX_SetMemoryFill(u32* a, ...) {
   //FIXME: GX_SetDisplayTransfer(gxCmdBuf, (u32*)gpuOut, 0x019001E0, u32* addr, 0x019001E0, 0x01001000);
   //FIXME: glClear?
-  glClearColor(1.0f, 0.0f, 1.0f, 1.0f); //FIXME: Use correct color
+  glClearColor(0x68/255.0f, 0xB0/255.0f, 0xD8/255.0f, 1.0f); //FIXME: Use correct color
   glClearDepth(0.0f);
 //  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
