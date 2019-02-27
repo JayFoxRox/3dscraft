@@ -3,7 +3,9 @@
 
 #include <3ds.h>
 
+#ifndef PORT
 #define CONFIG_3D_SLIDERSTATE (*(volatile float*)0x1FF81080)
+#endif
 
 typedef struct
 {

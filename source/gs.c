@@ -350,6 +350,8 @@ int gsVboDestroy(gsVbo_s* vbo)
 
 extern u32 debugValue[];
 
+#ifndef PORT
+
 void GPU_DrawArrayDirectly(GPU_Primitive_t primitive, u8* data, u32 n)
 {
 	//set attribute buffer address
@@ -409,13 +411,14 @@ void _GPUCMD_AddRawCommands(u32* cmd, u32 size)
 	else memcpy(&gpuCmdBuf[gpuCmdBufOffset], cmd, size*4);
 	gpuCmdBufOffset+=size;
 }
+#endif
 
 int gsVboDraw(gsVbo_s* vbo)
 {
 	if(!vbo || !vbo->data || !vbo->currentSize || !vbo->maxSize)return -1;
 
 	gsUpdateTransformation();
-
+#ifndef PORT
 	gsVboPrecomputeCommands(vbo);
 
 	// u64 val=svcGetSystemTick();
@@ -423,6 +426,9 @@ int gsVboDraw(gsVbo_s* vbo)
 	{
 		_GPUCMD_AddRawCommands(vbo->commands, vbo->commandsSize);
 	}else{
+#else
+  {
+#endif
 		GPU_DrawArrayDirectly(GPU_TRIANGLES, vbo->data, vbo->numVertices);
 	}
 	// debugValue[5]+=(u32)(svcGetSystemTick()-val);

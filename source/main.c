@@ -16,8 +16,13 @@
 #include "subscreen.h"
 #include "bmp.h"
 
+#ifndef PORT
 #include "test_vsh_shbin.h"
 #include "terrain_bin.h"
+#else
+RAW_FILE(test_vsh_shbin, "data/test.vsh")
+RAW_FILE(terrain_bin, "data/terrain.bin")
+#endif
 
 #define TICKS_PER_SEC (268123480)
 #define TICKS_PER_VBL (TICKS_PER_SEC/60)
@@ -60,8 +65,12 @@ void doFrame1()
 	GPU_SetBlendingColor(0,0,0,0);
 	GPU_SetDepthTestAndWriteMask(true, GPU_GREATER, GPU_WRITE_ALL);
 	
+#ifndef PORT
 	GPUCMD_AddSingleParam(0x00010062, 0); 
 	GPUCMD_AddSingleParam(0x000F0118, 0);
+#else
+#warning Bad GPUCMD_AddSingleParam
+#endif
 	
 	//setup shader
 		SHDR_UseProgram(shader, 0);
@@ -92,8 +101,8 @@ void doFrame1()
 
 	//setup lighting
 		vect3Df_s lightDir=vnormf(vect3Df(cos(lightAngle), -1.0f, sin(lightAngle)));
-		GPU_SetUniform(SHDR_GetUniformRegister(shader, "lightDirection", 0), (u32*)(float[]){0.0f, -lightDir.z, -lightDir.y, -lightDir.x}, 4);
-		GPU_SetUniform(SHDR_GetUniformRegister(shader, "lightAmbient", 0), (u32*)(float[]){0.7f, 0.4f, 0.4f, 0.4f}, 4);
+		GPU_SetUniform(SHDR_GetUniformRegister(shader, "lightDirection", 0), (u32*)(float[]){0.0f, -lightDir.z, -lightDir.y, -lightDir.x}, 1);
+		GPU_SetUniform(SHDR_GetUniformRegister(shader, "lightAmbient", 0), (u32*)(float[]){0.7f, 0.4f, 0.4f, 0.4f}, 1);
 
 	//draw world
 		gsMatrixMode(GS_MODELVIEW);
@@ -186,7 +195,9 @@ int main(int argc, char** argv)
 	initChunkPool();
 	initWorld(&world);
 	initSubscreen();
+#ifndef PORT
 	initScreenshot();
+#endif
 	print("generating world...\n");
 
 	initPlayer(&player);
@@ -199,7 +210,9 @@ int main(int argc, char** argv)
 
 	while(aptMainLoop())
 	{
+#ifndef PORT
 		float slider=CONFIG_3D_SLIDERSTATE;
+#endif
 		u64 newTick=svcGetSystemTick();
 		float timeDelta=((float)(newTick-lastTick))/TICKS_PER_SEC;
 		lastTick=newTick;
@@ -219,6 +232,7 @@ int main(int argc, char** argv)
 		doFrame1();
 		GPUCMD_Finalize();
 
+#ifndef PORT
 		if(slider>0.0f)
 		{
 			//new and exciting 3D !
@@ -255,6 +269,9 @@ int main(int argc, char** argv)
 			gspWaitForPPF();
 			GPUCMD_SetBuffer(gpuCmd, gpuCmdSize, 0);
 		}else{
+#else
+    {
+#endif
 			//boring old 2D !
 			GPUCMD_FlushAndRun(gxCmdBuf);
 			gspWaitForP3D();
@@ -270,7 +287,9 @@ int main(int argc, char** argv)
 
 		gspWaitForEvent(GSPEVENT_VBlank0, true);
 
+#ifndef PORT
 		if(keysDown()&KEY_Y)saveScreenshot();
+#endif
 
 		// u64 val=svcGetSystemTick();
 		// debugValue[1]=(u32)(svcGetSystemTick()-val);
@@ -284,7 +303,9 @@ int main(int argc, char** argv)
 		// drawBottom(); //DEBUG
 	}
 
+#ifndef PORT
 	exitScreenshot();
+#endif
 	exitSubscreen();
 	flushWorld(&world);
 	exitDispatcher(NULL);

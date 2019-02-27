@@ -1,0 +1,41 @@
+# More and more of these should be removed as the port gets more complete
+HACKS := -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast
+
+OBJS := \
+	port/3ds.o \
+	\
+	source/block.o \
+	source/camera.o \
+	source/configuration.o \
+	source/cursor.o \
+	source/dispatcher.o \
+	source/font1.o \
+	source/font.o \
+	source/generation.o \
+	source/gs.o \
+	source/job.o \
+	source/main.o \
+	source/math.o \
+	source/player.o \
+	source/producer.o \
+	source/sdnoise.o \
+	source/sky.o \
+	source/streaming.o \
+	source/subscreen.o \
+	source/text.o \
+	source/world.o \
+	source/xmem.o
+
+# Removed:
+#	source/screenshot.o [screenshots not supported in port]
+
+all: game
+
+%.o : %.c ./port/3ds.h
+	gcc -g -O0 -o $@ $< -I./port/ -DPORT=1 -c $(HACKS)
+
+clean:
+	rm -f $(OBJS)
+
+game: $(OBJS)
+	gcc -g -O0 -o $@ $^ -lm -lGL -lGLU -lGLEW -lglut -pthread -lSDL2
