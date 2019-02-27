@@ -366,6 +366,9 @@ static void gfxSwapBuffersGpu() {
     glGenTextures(1, &fb);
   }
 
+  glDisable(GL_LIGHTING);
+  glDisable(GL_DEPTH_TEST);
+
   glBindTexture(GL_TEXTURE_2D, fb);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -489,6 +492,8 @@ static void GPU_SetTexture(int a, u32* b, int width, int height, int filter, int
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, b);
 }
+
+extern float light_xyzw[4];
 static void GPU_SetUniform(u32 reg, u32* values, int count) {//FIXME: Implement
   //printf("Setting uniform %d to 0x%08X [%d values]\n", reg, values[0], count);
 
@@ -527,7 +532,16 @@ static void GPU_SetUniform(u32 reg, u32* values, int count) {//FIXME: Implement
     glLoadIdentity();
     glMultTransposeMatrixf(m);
   } else if (!strcmp(name, "lightAmbient")) {
+    float black[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+    float white[4] = {f[0], f[0], f[0], 1.0f};
+    float rgba[4] = { f[3], f[2], f[1], 1.0f};
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, rgba);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, black);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, white);
   } else if (!strcmp(name, "lightDirection")) {
+    light_xyzw[0] = f[3];
+    light_xyzw[1] = f[2];
+    light_xyzw[2] = f[1];
   } else {
     printf("Unsupported shader uniform '%s'\n", name);
   }
@@ -538,6 +552,43 @@ static void GPU_DrawArrayDirectly(GPU_Primitive_t primitive, u8* data, u32 n) {
   assert(primitive == GPU_TRIANGLES);
 
   glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "Draw");
+
+  // Emulate shader
+/*
+  r0.xyz = dp3(light_dir.xyz, v2.xyz)
+  r0.xyz = max(0.0,  r0.xyz)
+  r0.xyz *= light_ambient.w
+  o1.xyz = light_ambient.xyz + r0.xyz
+  o1.w = 1.0
+*/
+
+
+  glEnable(GL_LIGHTING);
+  glEnable(GL_LIGHT0);
+  float white[] = {1.0f, 1.0f, 1.0f, 1.0f};
+  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, white);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, white);
+  glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+
+//FIXME: Why is the sky gray here, but white in the original code?
+
+#if 0
+  glMaterialfv(GL_BACK, GL_EMISSION, white);
+  glColorMaterial(GL_BACK, GL_EMISSION);
+#endif
+
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+//    glLoadIdentity();
+#if 0
+  light_xyzw[0] = 0.0f;
+  light_xyzw[1] = 1.0f;
+  light_xyzw[2] = 0.0f;
+#endif
+  light_xyzw[3] = 0.0f;
+  glLightfv(GL_LIGHT0, GL_POSITION, light_xyzw);
+//  printf("Light dir: %f, %f, %f\n", light_xyzw[0], light_xyzw[1], light_xyzw[2]);
+  glPopMatrix();
 
 #if 1
   //FIXME: Disable this hack
