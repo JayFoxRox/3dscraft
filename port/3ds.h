@@ -673,6 +673,13 @@ static void hidScanInput() {
     keys |= KEY_DRIGHT; // Block selection
   }
 
+  if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A)) {
+    keys |= KEY_A; // ?
+  }
+  if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_B)) {
+    keys |= KEY_B; // ?
+  }
+
   if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_X)) {
     keys |= KEY_ZL; // ?
   }
